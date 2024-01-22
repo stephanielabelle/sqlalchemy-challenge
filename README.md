@@ -21,4 +21,4 @@ The homepage shows all available routes:
 2. "/api/v1.0/stations" - dictionary of station information  
 3. "/api/v1.0/tobs" - temperature observations of most active weather station  
 4. "/api/v1.0/<start>" - inputting a 'start' date returns summary statistics of temperature data for start date to end of dataset (input format = YYYY-MM-DD)  
-5. /api/v1.0/<start>/<end>" - inputting a 'start' date and 'end' date returns summary statistics of temperature data for that date range (input format = YYYY-MM-DD)  
+5. "/api/v1.0/<start>/<end>" - inputting a 'start' date and 'end' date separated by a "/", returns summary statistics of temperature data for that date range (input format = YYYY-MM-DD)  
