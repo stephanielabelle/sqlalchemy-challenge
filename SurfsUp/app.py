@@ -1,4 +1,3 @@
-
 # Import the dependencies.
 from flask import Flask, jsonify
 import numpy as np
@@ -7,7 +6,7 @@ from sqlalchemy.ext.automap import automap_base
 from sqlalchemy.orm import Session
 from sqlalchemy import create_engine, func
 import datetime as dt
-from statistics import mean
+
 
 #################################################
 # Database Setup
@@ -49,9 +48,9 @@ def welcome():
         f"/api/v1.0/<start>/<end><br/>"
     )
 
+# Route that returns a dictionary of precipitation data for last year of database with 'Date' as key
 @app.route("/api/v1.0/precipitation")
 def precipitation():
-    
     results = session.query(measurement.date, measurement.prcp).filter(measurement.date >= querydate).all()
     precip_list = []
     for date, prcp in results:
@@ -60,12 +59,22 @@ def precipitation():
         precip_list.append(precip_dict)
     return jsonify(precip_list)
 
+# Route that returns list of stations
 @app.route("/api/v1.0/stations")
 def stations_tab():
-    station_list = session.query(station.station).all()
-    station_names = list(np.ravel(station_list))
-    return jsonify(station_names)
+    stat = session.query(station.station, station.name, station.latitude, station.longitude, station.elevation).all()
+    station_list = []
+    for sta, nm, lat, lon, el in stat:
+        station_dict = {}
+        station_dict["Station"] = sta,
+        station_dict["Name"] = nm,
+        station_dict["Latitude"] = lat,
+        station_dict["Longitude"] = lon,
+        station_dict['Elevation'] = el
+        station_list.append(station_dict)
+    return jsonify(station_list)
 
+# Route that returns temperature observations from last year of most active station 'USC00519281'
 @app.route("/api/v1.0/tobs")
 def tobs():
     activestation = session.query(measurement.tobs).\
@@ -74,40 +83,30 @@ def tobs():
     temp_list = list(np.ravel(activestation))
     return jsonify(temp_list)
 
-
-@app.route("/datecheck/<date>", methods=['GET'])
-def datecheck(date):
-    data = session.query(measurement.tobs).\
-    filter(measurement.date >= date).all()
-    tobs_list = list(np.ravel(data))
-    min_temp = min(tobs_list)
-    max_temp = max(tobs_list)
-    avg_temp = mean(tobs_list)
-    temp_dict = {"min_temp":min_temp, "max_temp":max_temp, "avg_temp":avg_temp}
-    return temp_dict
-
-
+# Route that returns summary statistics of temperature data with user defined start date
 @app.route("/api/v1.0/<start>", methods=['GET'])
 def startdate(start):
-    data = session.query(measurement.tobs).filter(measurement.date >= start).all()
-    tobs_list = list(np.ravel(data))
-    min_temp = min(tobs_list)
-    max_temp = max(tobs_list)
-    avg_temp = mean(tobs_list)
-    temp_dict = {"min_temp":min_temp, "max_temp":max_temp, "avg_temp":avg_temp}
-    return jsonify(temp_dict)
+    sel = [ func.min(measurement.tobs),
+            func.max(measurement.tobs),
+            func.avg(measurement.tobs)]
+    data = session.query(*sel).\
+        filter(measurement.date >= start).all()
+    for mi, mx, av in data:
+        stats = {"Minimum Temperature":mi, "Maximum Temperature":mx, "Average Temperature":av}
+    return jsonify(stats)
 
+# Route that returns summary statistics of temperature data with user defined start and end date
 @app.route("/api/v1.0/<start>/<end>", methods=['GET'])
 def startend(start, end):
-    data = session.query(measurement.tobs).\
-    filter(measurement.date >= start).\
-    filter(measurement.date <= end).all()
-    tobs_list = list(np.ravel(data))
-    min_temp = min(tobs_list)
-    max_temp = max(tobs_list)
-    avg_temp = mean(tobs_list)
-    temp_dict = {"min_temp":min_temp, "max_temp":max_temp, "avg_temp":avg_temp}
-    return jsonify(temp_dict)
+    sel = [ func.min(measurement.tobs),
+            func.max(measurement.tobs),
+            func.avg(measurement.tobs)]
+    data = session.query(*sel).\
+        filter(measurement.date >= start).\
+        filter(measurement.date <= end).all()
+    for mi, mx, av in data:
+        stats = {"Minimum Temperature":mi, "Maximum Temperature":mx, "Average Temperature":av}
+    return jsonify(stats)
 
 
 if __name__ == '__main__':
